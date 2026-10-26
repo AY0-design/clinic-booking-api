@@ -31,6 +31,7 @@ app.get('/', (req, res) => {
   res.type('html').send(page.replace('/*__API_KEY__*/', `window.API_KEY=${key};`));
 });
 app.get('/healthz', (req, res) => res.json({ ok: true }));
+app.get('/favicon.ico', (req, res) => res.sendStatus(204));
 
 // ---- Level 2: API key on every API request --------------------------------
 function safeEqual(a, b) {
