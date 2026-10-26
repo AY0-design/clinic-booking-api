@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Clinic Booking</title>
 <style>
-  :root { --bg:#f4f6f8; --card:#fff; --ink:#14202b; --mute:#5f6e7d; --line:#e2e7ed; --soft:#eef2f5; --brand:#0f6e5a; --brand-soft:#e3f3ee; --brand-ink:#fff; --bad:#b3261e; --bad-soft:#fdecea; }
+  :root { --bg:#f4f6f8; --card:#fff; --ink:#14202b; --mute:#5f6e7d; --line:#e2e7ed; --soft:#eef2f5; --brand:#0f6e5a; --brand-soft:#e3f3ee; --brand-ink:#fff; --bad:#b3261e; --bad-soft:#fdecea; --ease-out:cubic-bezier(.23,1,.32,1); color-scheme:light dark; }
   @media (prefers-color-scheme: dark) {
     :root { --bg:#0e1317; --card:#161d23; --ink:#e8edf2; --mute:#94a1af; --line:#26313a; --soft:#1d262d; --brand:#3cc4a4; --brand-soft:#133229; --brand-ink:#06201a; --bad:#ff8a80; --bad-soft:#3a1c1a; }
   }
   * { box-sizing:border-box; }
+  :where(button) { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
   body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
   main { max-width:880px; margin:0 auto; padding:24px 16px 72px; }
   header h1 { font-size:1.6rem; margin:0; letter-spacing:-.01em; }
@@ -30,13 +31,15 @@
   .times { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; margin-top:16px; }
   .time { padding:12px 8px; text-align:center; border-radius:10px; font-weight:600; }
   .time small { display:block; font-weight:400; color:var(--mute); font-size:.75rem; }
-  .time:hover:not(:disabled), .day:hover:not([aria-pressed=true]) { border-color:var(--brand); background:var(--brand-soft); }
+  @media (hover:hover) and (pointer:fine) { .time:hover:not(:disabled), .day:hover:not([aria-pressed=true]) { border-color:var(--brand); background:var(--brand-soft); } }
   .time[aria-pressed=true] { background:var(--brand); color:var(--brand-ink); border-color:var(--brand); } .time[aria-pressed=true] small { color:inherit; }
   .empty { color:var(--mute); padding:24px 0; text-align:center; }
   .skel { height:64px; border-radius:12px; background:linear-gradient(90deg,var(--soft),var(--line),var(--soft)); background-size:200% 100%; animation:sh 1.2s infinite; }
   @keyframes sh { to { background-position:-200% 0; } }
-  @media (prefers-reduced-motion: reduce) { .skel { animation:none; } * { scroll-behavior:auto !important; } }
-  button { font:inherit; cursor:pointer; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); padding:9px 16px; }
+  @media (prefers-reduced-motion: reduce) { .skel { animation:none; } button, .toast, #formCard, #doneCard, #pickCard, .check { transition-property:opacity, background-color, border-color, color; } @starting-style { #formCard, #doneCard, #pickCard, .check { transform:none; } } }
+  button { font:inherit; cursor:pointer; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); padding:9px 16px;
+    transition:transform 140ms var(--ease-out), background-color 150ms ease, border-color 150ms ease, color 150ms ease; }
+  button:active:not(:disabled) { transform:scale(.97); }
   button.primary { background:var(--brand); color:var(--brand-ink); border-color:var(--brand); font-weight:600; }
   button.link { border:0; background:none; color:var(--brand); padding:4px 6px; text-decoration:underline; }
   button.danger { color:var(--bad); }
@@ -60,9 +63,12 @@
   .tag { font-size:.75rem; padding:2px 10px; border-radius:99px; background:var(--brand-soft); color:var(--brand); margin-right:6px; }
   .tag.cancelled { background:var(--bad-soft); color:var(--bad); }
   .lookup { display:flex; gap:10px; align-items:end; flex-wrap:wrap; } .lookup > div { flex:1 1 220px; } .lookup label { margin-top:0; }
-  .toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:10px; opacity:0; pointer-events:none; transition:opacity .2s; }
-  .toast.show { opacity:1; }
+  .toast { position:fixed; left:50%; bottom:20px; transform:translate(-50%,8px); background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:10px; opacity:0; pointer-events:none; transition:opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
+  .toast.show { opacity:1; transform:translate(-50%,0); }
   .hidden { display:none !important; }
+  #formCard, #doneCard, #pickCard { transition:opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
+  @starting-style { #formCard, #doneCard, #pickCard { opacity:0; transform:translateY(8px); } }
+  .check { transition:transform 300ms var(--ease-out); } @starting-style { .check { transform:scale(.9); } }
 </style>
 </head>
 <body>
@@ -122,6 +128,7 @@ async function api(path, opts = {}) {
   const body = await res.json().catch(() => ({}));
   return { res, body };
 }
+const smooth = () => (matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
 function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2400); }
 function setStep(n) { [...$('steps').children].forEach((li, i) => { li.className = i < n ? 'done' : i === n ? 'on' : ''; }); }
 
@@ -211,7 +218,8 @@ function showDone(b) {
     const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Clinic//EN', 'BEGIN:VEVENT', 'UID:' + b.id, 'DTSTAMP:' + z(new Date()), 'DTSTART:' + z(s.start), 'DTEND:' + z(s.end), 'SUMMARY:Appointment with ' + s.provider, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' })); a.download = 'appointment.ics'; a.click();
   };
-  $('doneCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  $('doneCard').setAttribute('tabindex', '-1'); $('doneCard').focus({ preventScroll: true });
+  $('doneCard').scrollIntoView({ behavior: smooth(), block: 'start' });
 }
 
 async function cancel(id, after) {
