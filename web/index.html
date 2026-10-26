@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clinic Booking</title>
+<style>
+  :root { --bg:#f4f6f8; --card:#fff; --ink:#14202b; --mute:#5f6e7d; --line:#e2e7ed; --soft:#eef2f5; --brand:#0f6e5a; --brand-soft:#e3f3ee; --brand-ink:#fff; --bad:#b3261e; --bad-soft:#fdecea; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0e1317; --card:#161d23; --ink:#e8edf2; --mute:#94a1af; --line:#26313a; --soft:#1d262d; --brand:#3cc4a4; --brand-soft:#133229; --brand-ink:#06201a; --bad:#ff8a80; --bad-soft:#3a1c1a; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  main { max-width:880px; margin:0 auto; padding:24px 16px 72px; }
+  header h1 { font-size:1.6rem; margin:0; letter-spacing:-.01em; }
+  header p { margin:4px 0 20px; color:var(--mute); }
+  .steps { display:flex; gap:8px; margin:0 0 20px; padding:0; list-style:none; font-size:.85rem; color:var(--mute); }
+  .steps li { flex:1; padding-top:8px; border-top:3px solid var(--line); }
+  .steps li.on { color:var(--ink); border-color:var(--brand); font-weight:600; }
+  .steps li.done { border-color:var(--brand); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; margin-bottom:16px; }
+  h2 { font-size:1.05rem; margin:0 0 12px; }
+  .seg { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px; }
+  .seg button { border-radius:99px; padding:6px 14px; font-size:.9rem; }
+  .seg button[aria-pressed=true] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .days { display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; scroll-snap-type:x proximity; }
+  .day { flex:0 0 72px; scroll-snap-align:start; text-align:center; padding:10px 4px; border-radius:12px; line-height:1.25; }
+  .day small { display:block; color:var(--mute); font-size:.75rem; } .day b { font-size:1.2rem; display:block; }
+  .day[aria-pressed=true] { background:var(--ink); color:var(--bg); border-color:var(--ink); } .day[aria-pressed=true] small { color:inherit; opacity:.75; }
+  .times { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; margin-top:16px; }
+  .time { padding:12px 8px; text-align:center; border-radius:10px; font-weight:600; }
+  .time small { display:block; font-weight:400; color:var(--mute); font-size:.75rem; }
+  .time:hover:not(:disabled), .day:hover:not([aria-pressed=true]) { border-color:var(--brand); background:var(--brand-soft); }
+  .time[aria-pressed=true] { background:var(--brand); color:var(--brand-ink); border-color:var(--brand); } .time[aria-pressed=true] small { color:inherit; }
+  .empty { color:var(--mute); padding:24px 0; text-align:center; }
+  .skel { height:64px; border-radius:12px; background:linear-gradient(90deg,var(--soft),var(--line),var(--soft)); background-size:200% 100%; animation:sh 1.2s infinite; }
+  @keyframes sh { to { background-position:-200% 0; } }
+  @media (prefers-reduced-motion: reduce) { .skel { animation:none; } * { scroll-behavior:auto !important; } }
+  button { font:inherit; cursor:pointer; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); padding:9px 16px; }
+  button.primary { background:var(--brand); color:var(--brand-ink); border-color:var(--brand); font-weight:600; }
+  button.link { border:0; background:none; color:var(--brand); padding:4px 6px; text-decoration:underline; }
+  button.danger { color:var(--bad); }
+  button:disabled { opacity:.55; cursor:not-allowed; }
+  :focus-visible { outline:2px solid var(--brand); outline-offset:2px; }
+  .summary { display:flex; gap:12px; align-items:center; background:var(--brand-soft); border-radius:12px; padding:12px 14px; margin-bottom:8px; }
+  .summary b { display:block; }
+  label { display:block; font-size:.85rem; color:var(--mute); margin:14px 0 4px; }
+  input { font:inherit; width:100%; padding:11px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); }
+  input[aria-invalid=true] { border-color:var(--bad); }
+  .fe { color:var(--bad); font-size:.85rem; min-height:1.2em; }
+  .actions { display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+  .msg { padding:10px 12px; border-radius:10px; margin-top:12px; background:var(--bad-soft); color:var(--bad); }
+  .ok { text-align:center; } .check { width:56px; height:56px; border-radius:50%; background:var(--brand); color:var(--brand-ink); display:grid; place-items:center; font-size:1.8rem; margin:0 auto 8px; }
+  .ok h2 { font-size:1.3rem; margin:0; } .ok p { color:var(--mute); margin:4px 0 16px; }
+  dl { text-align:left; margin:0 auto 16px; max-width:460px; border:1px solid var(--line); border-radius:12px; }
+  dl div { display:flex; justify-content:space-between; gap:12px; padding:10px 14px; border-top:1px solid var(--line); } dl div:first-child { border-top:0; }
+  dt { color:var(--mute); } dd { margin:0; font-weight:600; text-align:right; word-break:break-all; }
+  .row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 0; border-top:1px solid var(--line); flex-wrap:wrap; }
+  .row:first-of-type { border-top:0; } .row small { display:block; color:var(--mute); }
+  .tag { font-size:.75rem; padding:2px 10px; border-radius:99px; background:var(--brand-soft); color:var(--brand); margin-right:6px; }
+  .tag.cancelled { background:var(--bad-soft); color:var(--bad); }
+  .lookup { display:flex; gap:10px; align-items:end; flex-wrap:wrap; } .lookup > div { flex:1 1 220px; } .lookup label { margin-top:0; }
+  .toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:10px; opacity:0; pointer-events:none; transition:opacity .2s; }
+  .toast.show { opacity:1; }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Book an appointment</h1>
+    <p>Pick a time, tell us who you are, and you're booked in. Free cancellation any time.</p>
+  </header>
+
+  <ol class="steps" id="steps" aria-label="Progress"><li class="on">1 · Choose a time</li><li>2 · Your details</li><li>3 · Confirmed</li></ol>
+
+  <section class="card" id="pickCard" aria-labelledby="pickH">
+    <h2 id="pickH">Choose a time</h2>
+    <div class="seg" id="providers" role="group" aria-label="Provider"></div>
+    <div class="days" id="days" role="group" aria-label="Date"></div>
+    <div class="times" id="times" aria-live="polite"></div>
+  </section>
+
+  <section class="card hidden" id="formCard" aria-labelledby="formH">
+    <h2 id="formH">Your details</h2>
+    <div class="summary"><div style="font-size:1.4rem" aria-hidden="true">🗓</div><div><b id="sumWhen"></b><span id="sumWho"></span></div><button class="link" id="change" type="button" style="margin-left:auto">Change</button></div>
+    <form id="form" novalidate>
+      <label for="name">Full name</label><input id="name" autocomplete="name" required aria-describedby="nameE">
+      <div class="fe" id="nameE"></div>
+      <label for="email">Email</label><input id="email" type="email" inputmode="email" autocomplete="email" required aria-describedby="emailE">
+      <div class="fe" id="emailE"></div>
+      <div class="actions"><button class="primary" id="submit" type="submit">Confirm booking</button></div>
+    </form>
+    <div id="formMsg" role="alert"></div>
+  </section>
+
+  <section class="card hidden ok" id="doneCard" aria-live="polite"></section>
+
+  <section class="card" aria-labelledby="mineH">
+    <h2 id="mineH">My bookings</h2>
+    <form id="lookup" class="lookup" novalidate>
+      <div><label for="lookupEmail">Email used to book</label><input id="lookupEmail" type="email" autocomplete="email"></div>
+      <button type="submit">Show my bookings</button>
+    </form>
+    <div id="mine" style="margin-top:8px"></div>
+    <button id="more" class="hidden" type="button">Load more</button>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/*__API_KEY__*/
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const dayKey = (iso) => { const d = new Date(iso); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+const fmtTime = (iso) => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+const fmtLong = (iso) => new Date(iso).toLocaleString([], { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+const EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, { ...opts, headers: { 'X-API-Key': window.API_KEY || '', 'Content-Type': 'application/json', ...(opts.headers || {}) } });
+  const body = await res.json().catch(() => ({}));
+  return { res, body };
+}
+function toast(t) { const el = $('toast'); el.textContent = t; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2400); }
+function setStep(n) { [...$('steps').children].forEach((li, i) => { li.className = i < n ? 'done' : i === n ? 'on' : ''; }); }
+
+let slots = [], provider = '', day = null, chosen = null, pending = null, cursor = null, mineEmail = '', providers = [];
+
+async function loadSlots(keep) {
+  if (!keep) $('times').innerHTML = '<div class="skel"></div><div class="skel"></div><div class="skel"></div>';
+  const { res, body } = await api('/slots');
+  if (!res.ok) { $('times').innerHTML = `<div class="msg">${esc(body.error || 'Could not load times')} <button class="link" onclick="loadSlots()">Retry</button></div>`; return; }
+  slots = body.slots;
+  providers = [...new Set(slots.map((s) => s.provider))];
+  renderProviders(); renderDays();
+}
+const open = () => slots.filter((s) => s.available && new Date(s.start) > Date.now() && (!provider || s.provider === provider));
+
+function renderProviders() {
+  $('providers').innerHTML = ['', ...providers].map((p) => `<button type="button" data-p="${esc(p)}" aria-pressed="${p === provider}">${p ? esc(p) : 'Any provider'}</button>`).join('');
+}
+function renderDays() {
+  const byDay = new Map();
+  open().forEach((s) => { const k = dayKey(s.start); if (!byDay.has(k)) byDay.set(k, []); byDay.get(k).push(s); });
+  if (!byDay.size) { $('days').innerHTML = ''; $('times').innerHTML = '<div class="empty" style="grid-column:1/-1">No open times right now. Please check back soon.</div>'; return; }
+  if (!byDay.has(day)) day = byDay.keys().next().value;
+  $('days').innerHTML = [...byDay].map(([k, list]) => {
+    const d = new Date(list[0].start);
+    return `<button class="day" type="button" data-d="${k}" aria-pressed="${k === day}"><small>${d.toLocaleDateString([], { weekday: 'short' })}</small><b>${d.getDate()}</b><small>${d.toLocaleDateString([], { month: 'short' })} · ${list.length}</small></button>`;
+  }).join('');
+  $('times').innerHTML = byDay.get(day).map((s) =>
+    `<button class="time" type="button" data-id="${esc(s.id)}" aria-pressed="${chosen && chosen.id === s.id}">${esc(fmtTime(s.start))}<small>${esc(s.provider)}</small></button>`).join('');
+}
+$('providers').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; provider = b.dataset.p; renderProviders(); renderDays(); };
+$('days').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; day = b.dataset.d; renderDays(); };
+$('times').onclick = (e) => {
+  const b = e.target.closest('button[data-id]'); if (!b) return;
+  chosen = slots.find((s) => s.id === b.dataset.id); pending = null;
+  $('sumWhen').textContent = fmtLong(chosen.start); $('sumWho').textContent = chosen.provider + ' · ' + fmtTime(chosen.start) + '–' + fmtTime(chosen.end);
+  $('formMsg').innerHTML = ''; $('doneCard').classList.add('hidden');
+  $('pickCard').classList.add('hidden'); $('formCard').classList.remove('hidden'); setStep(1); $('name').focus();
+};
+$('change').onclick = () => { $('formCard').classList.add('hidden'); $('pickCard').classList.remove('hidden'); setStep(0); renderDays(); };
+
+function fieldErr(id, eid, msg) { $(id).setAttribute('aria-invalid', msg ? 'true' : 'false'); $(eid).textContent = msg || ''; return !msg; }
+$('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = $('name').value.trim(), email = $('email').value.trim();
+  const a = fieldErr('name', 'nameE', name ? '' : 'Please enter your name.');
+  const b = fieldErr('email', 'emailE', EMAIL_RE.test(email) ? '' : 'Enter a valid email, like you@example.com.');
+  if (!a || !b) return;
+  const payload = JSON.stringify({ slot_id: chosen.id, name, email });
+  // One idempotency key per attempt: a double click or a retry after a network drop cannot book twice.
+  if (!pending || pending.sig !== payload) pending = { sig: payload, key: crypto.randomUUID() };
+  $('submit').disabled = true; $('submit').textContent = 'Booking…'; $('formMsg').innerHTML = '';
+  try {
+    const { res, body } = await api('/bookings', { method: 'POST', body: payload, headers: { 'Idempotency-Key': pending.key } });
+    if (res.status === 201) {
+      await loadSlots(true); showDone(body); $('form').reset(); pending = null; chosen = null;
+      $('lookupEmail').value = body.email; showMine(body.email);
+    } else if (res.status === 409) {
+      $('formMsg').innerHTML = '<div class="msg">Sorry, someone just booked that time. <button class="link" id="pickAgain" type="button">Pick another time</button></div>';
+      $('pickAgain').onclick = $('change').onclick; loadSlots(true);
+    } else if (res.status === 429) {
+      $('formMsg').innerHTML = `<div class="msg">Too many attempts for this email. Please try again in ${esc(res.headers.get('Retry-After') || 60)} seconds.</div>`;
+    } else $('formMsg').innerHTML = `<div class="msg">${esc(body.error || 'Something went wrong. Please try again.')}</div>`;
+  } catch { $('formMsg').innerHTML = '<div class="msg">Network problem. Press Confirm again; it is safe to retry.</div>'; }
+  $('submit').disabled = false; $('submit').textContent = 'Confirm booking';
+});
+
+function showDone(b) {
+  const s = slots.find((x) => x.id === b.slot_id);
+  $('doneCard').innerHTML = `<div class="check" aria-hidden="true">✓</div><h2>You're booked, ${esc(b.name.split(' ')[0])}</h2>
+    <p>Keep this page or note your confirmation ID.</p>
+    <dl>${s ? `<div><dt>When</dt><dd>${esc(fmtLong(s.start))}</dd></div><div><dt>With</dt><dd>${esc(s.provider)}</dd></div>` : ''}
+    <div><dt>Name</dt><dd>${esc(b.name)}</dd></div><div><dt>Email</dt><dd>${esc(b.email)}</dd></div>
+    <div><dt>Confirmation ID</dt><dd>${esc(b.id)}</dd></div></dl>
+    <div class="actions" style="justify-content:center">
+      <button type="button" id="ics" class="primary">Add to calendar</button>
+      <button type="button" id="copyId">Copy ID</button>
+      <button type="button" id="again">Book another</button>
+      <button type="button" id="cancelNow" class="danger">Cancel booking</button></div>`;
+  $('formCard').classList.add('hidden'); $('pickCard').classList.add('hidden'); $('doneCard').classList.remove('hidden'); setStep(3);
+  $('copyId').onclick = () => navigator.clipboard.writeText(b.id).then(() => toast('ID copied'), () => toast('Copy failed'));
+  $('again').onclick = () => { $('doneCard').classList.add('hidden'); $('pickCard').classList.remove('hidden'); setStep(0); renderDays(); };
+  $('cancelNow').onclick = () => cancel(b.id, () => { $('again').onclick(); });
+  $('ics').onclick = () => {
+    if (!s) return;
+    const z = (iso) => new Date(iso).toISOString().replace(/[-:]|\.\d{3}/g, '');
+    const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Clinic//EN', 'BEGIN:VEVENT', 'UID:' + b.id, 'DTSTAMP:' + z(new Date()), 'DTSTART:' + z(s.start), 'DTEND:' + z(s.end), 'SUMMARY:Appointment with ' + s.provider, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' })); a.download = 'appointment.ics'; a.click();
+  };
+  $('doneCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function cancel(id, after) {
+  if (!confirm('Cancel this appointment? The time will be released for others.')) return;
+  const { res, body } = await api('/bookings/' + encodeURIComponent(id), { method: 'DELETE' });
+  if (!res.ok && res.status !== 409) { toast(body.error || 'Could not cancel'); return; }
+  toast('Booking cancelled'); await loadSlots(true); if (mineEmail) showMine(mineEmail); if (after) after();
+}
+
+function bookingRow(b) {
+  const s = slots.find((x) => x.id === b.slot_id);
+  return `<div class="row"><div><b>${s ? esc(fmtLong(s.start)) : 'Slot ' + esc(b.slot_id)}</b><small>${s ? esc(s.provider) + ' · ' : ''}ID ${esc(b.id.slice(0, 8))}</small></div>
+    <div><span class="tag ${esc(b.status)}">${esc(b.status)}</span>${b.status === 'confirmed' ? `<button type="button" class="danger" data-cancel="${esc(b.id)}">Cancel</button>` : ''}</div></div>`;
+}
+async function showMine(email, more) {
+  if (!more) { cursor = null; mineEmail = email; $('mine').innerHTML = ''; }
+  const q = `/bookings?email=${encodeURIComponent(mineEmail)}&limit=5` + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '');
+  const { res, body } = await api(q);
+  if (!res.ok) { $('mine').innerHTML = `<div class="msg">${esc(body.error || 'Could not load bookings')}</div>`; return; }
+  if (!more && !body.bookings.length) $('mine').innerHTML = '<div class="empty">No bookings found for that email.</div>';
+  $('mine').insertAdjacentHTML('beforeend', body.bookings.map(bookingRow).join(''));
+  cursor = body.next_cursor; $('more').classList.toggle('hidden', !cursor);
+}
+$('lookup').addEventListener('submit', (e) => { e.preventDefault(); const v = $('lookupEmail').value.trim(); if (EMAIL_RE.test(v)) showMine(v); else toast('Enter a valid email'); });
+$('more').onclick = () => showMine(mineEmail, true);
+$('mine').addEventListener('click', (e) => { const id = e.target.dataset && e.target.dataset.cancel; if (id) cancel(id); });
+
+loadSlots();
+</script>
+</body>
+</html>

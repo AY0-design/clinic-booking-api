@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: clinic-booking
+    runtime: node
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
